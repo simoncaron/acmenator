@@ -26,7 +26,7 @@ var RunArgs = RunArgsStruct{}
 func init() {
 	flag.StringVar(&RunArgs.SourceFile, "input", "acme.json", "The JSON source produced by Traefik")
 	flag.StringVar(&RunArgs.TargetDir, "outdir", "", "The output directory for generated certs")
-	flag.StringVar(&RunArgs.TargetDir, "domains", "all", "The list of domain for which certs must be generated.")
+	flag.StringVar(&RunArgs.Domains, "domains", "all", "The list of domain for which certs must be generated.")
 	flag.BoolVar(&RunArgs.ProducePEM, "pem", false, "Produce a PEM style key/cert pair")
 	flag.BoolVar(&RunArgs.ProducePKCS, "pkcs", false, "Produce a PKCS12 keystore")
 	flag.StringVar(&RunArgs.PKCSPassword, "p", "changeit", "Password for the PKCS keystore")

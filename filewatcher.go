@@ -1,15 +1,17 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 )
 
-func listen(filename string, done chan bool) {
+func listen(filename string, domains string, done chan bool) {
 
 	// Do an initial run
 	log.Infof("Processing %s...", filename)
-	processFileChange(filename)
+	processFileChange(filename, domains)
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -32,7 +34,7 @@ func listen(filename string, done chan bool) {
 				}
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					log.Infof("Detected change on %s", event.Name)
-					processFileChange(filename)
+					processFileChange(filename, domains)
 					log.Info("Updated certs")
 				}
 			case err, ok := <-watcher.Errors:
@@ -47,10 +49,12 @@ func listen(filename string, done chan bool) {
 	done <- true
 }
 
-func processFileChange(filename string) {
+func processFileChange(filename string, domains string) {
 	var content []byte
 	var err error
 	jsonContent := acme{}
+
+	domainList := strings.Split(domains, ",")
 
 	content, err = readJSONFile(filename)
 	if err != nil {
@@ -71,22 +75,26 @@ func processFileChange(filename string) {
 
 		log.Debug("Found a v1 JSON")
 		for i := range jsonContent.Certs {
-			if err := decodeKeyPairs(&jsonContent.Certs[i]); err != nil {
-				log.Error(err)
-				return
+			if domains == "all" || contains(domainList, jsonContent.Letsencrypt.Certs[i].Domain.Main) {
+				if err := decodeKeyPairs(&jsonContent.Certs[i]); err != nil {
+					log.Error(err)
+					return
+				}
+				processCert(jsonContent.Certs[i])
 			}
-			processCert(jsonContent.Certs[i])
 		}
 
 	} else if len(jsonContent.Letsencrypt.Certs) > 0 && len(jsonContent.Certs) == 0 {
 
 		log.Debug("Found a v2 JSON")
 		for i := range jsonContent.Letsencrypt.Certs {
-			if err := decodeKeyPairs(&jsonContent.Letsencrypt.Certs[i]); err != nil {
-				log.Error(err)
-				return
+			if domains == "all" || contains(domainList, jsonContent.Letsencrypt.Certs[i].Domain.Main) {
+				if err := decodeKeyPairs(&jsonContent.Letsencrypt.Certs[i]); err != nil {
+					log.Error(err)
+					return
+				}
+				processCert(jsonContent.Letsencrypt.Certs[i])
 			}
-			processCert(jsonContent.Letsencrypt.Certs[i])
 		}
 
 	} else {
@@ -106,3 +114,12 @@ func processCert(cert cert) {
 		}
 	}
 }
+
+func contains(arr []string, str string) bool {
+	for _, a := range arr {
+	   if a == str {
+		  return true
+	   }
+	}
+	return false
+ }

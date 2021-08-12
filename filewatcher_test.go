@@ -23,7 +23,7 @@ func TestProcessFileChange(t *testing.T) {
 	RunArgs.TargetDir, _ = filepath.Abs("testdata")
 	RunArgs.ProducePEM = true
 
-	processFileChange(RunArgs.SourceFile)
+	processFileChange(RunArgs.SourceFile, "all")
 	assert.FileExists(t, filepath.Join("testdata", "baz.foo.bar.key"))
 	assert.FileExists(t, filepath.Join("testdata", "baz.foo.bar.pem"))
 	assert.FileExists(t, filepath.Join("testdata", "foo.bar.key"))
@@ -31,7 +31,9 @@ func TestProcessFileChange(t *testing.T) {
 
 	RunArgs.SourceFile, _ = filepath.Abs("testdata/acme_v2.golden")
 	RunArgs.ProducePKCS = true
-	processFileChange(RunArgs.SourceFile)
+	RunArgs.Domains = "all"
+
+	processFileChange(RunArgs.SourceFile, RunArgs.Domains)
 	assert.FileExists(t, filepath.Join("testdata", "baz.foo.bar.pkcs12"))
 	assert.FileExists(t, filepath.Join("testdata", "foo.bar.pkcs12"))
 }
